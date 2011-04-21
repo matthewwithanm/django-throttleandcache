@@ -1,6 +1,7 @@
 from hashlib import sha256
 from django.core.cache import get_cache
 from .settings import MAX_TIMEOUT
+from django.conf import settings
 
 
 def __cache_key(fn, fn_args, fn_kwargs):
@@ -17,10 +18,15 @@ class NoneResult:
     pass
 
 
-def cache_result(timeout=-1, cache='default', key_prefix=''):
+def cache_result(timeout=-1, cache=None, key_prefix=''):
     """
     Cache the result of a function call for <timeout> seconds.
     """
+    
+    if cache is None:
+        # Fall back to CACHE_BACKEND for old versions of django.
+        cache = getattr(settings, 'CACHE_BACKEND', 'default')
+    
     cache_backend = get_cache(cache)
     
     if timeout == -1:
