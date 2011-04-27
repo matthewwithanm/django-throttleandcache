@@ -33,3 +33,5 @@ positional (`self`) argument:
 If you wish to cache the result across all instances, make sure the method will
 be called with the same arguments (by making it a static or class method, or 
 removing it from the class altogether).
+
+The `cache_result` decorator also accepts optional `cache` and `key_prefix` keyword arguments.
