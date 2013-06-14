@@ -28,12 +28,7 @@ def cache(timeout=-1, using=None, key_prefix=''):
     Cache the result of a function call for <timeout> seconds.
     """
 
-    cache_name = using
-    if cache_name is None:
-        # Fall back to CACHE_BACKEND for old versions of django.
-        cache_name = getattr(settings, 'CACHE_BACKEND', 'default')
-
-    cache_backend = get_cache(cache_name)
+    cache_backend = get_cache(using or settings.THROTTLEANDCACHE_DEFAULT_CACHE)
 
     if timeout == -1:
         timeout = settings.THROTTLEANDCACHE_MAX_TIMEOUT
