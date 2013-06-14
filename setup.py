@@ -23,15 +23,20 @@ class PyTest(TestCommand):
         sys.exit(errno)
 
 
+# Load package meta from the pkgmeta module without loading throttleandcache.
+pkgmeta = {}
+execfile(os.path.join(os.path.dirname(__file__),
+         'throttleandcache', 'pkgmeta.py'), pkgmeta)
+
+
 setup(
     name='django-throttleandcache',
-    version="0.1",
+    version=pkgmeta['__version__'],
     description='A utility for caching/throttling function calls.',
     url='http://github.com/matthewwithanm/django-throttleandcache',
     license='BSD',
     long_description=README,
-
-    author='Matthew Tretter',
+    author=pkgmeta['__author__'],
     author_email='m@tthewwithanm.com',
     packages=find_packages(),
     include_package_data=True,
