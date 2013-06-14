@@ -1,3 +1,4 @@
+from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from throttleandcache.tdparse import parse
 
@@ -28,3 +29,10 @@ def test_number():
 
     """
     assert parse(1) == relativedelta(seconds=1)
+
+
+def test_offset():
+    # Make sure the parsed value can be added to a datetime. This is important
+    # because it's possible to create valid relativedeltas that can't be added
+    # to datetimes. (e.g. with a float value for "year")
+    datetime.now() + parse('1s')
