@@ -2,4 +2,5 @@
 *.egg
 *.egg-info
 /.env
+/dist
 /venv
