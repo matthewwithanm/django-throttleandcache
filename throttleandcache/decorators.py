@@ -1,5 +1,5 @@
 from hashlib import sha256
-from datetime import datetime, timedelta
+from datetime import datetime
 from django.core.cache import get_cache
 from django.utils.decorators import method_decorator
 from django.conf import settings
