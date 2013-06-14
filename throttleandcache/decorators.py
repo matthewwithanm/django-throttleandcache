@@ -5,6 +5,7 @@ from django.utils.decorators import method_decorator
 from django.conf import settings
 from functools import wraps
 from time import mktime
+from .logging import logger
 from .tdparse import parse
 
 
@@ -25,7 +26,7 @@ class CachedValue(object):
         self.expiration_time = expiration_time
 
 
-def cache(timeout=-1, using=None, key_prefix=''):
+def cache(timeout=-1, using=None, key_prefix='', graceful=False):
     """
     Cache the result of a function call for <timeout> seconds.
     """
@@ -40,13 +41,32 @@ def cache(timeout=-1, using=None, key_prefix=''):
         def wrapper(*args, **kwargs):
             key = key_prefix + __cache_key(fn, args, kwargs)
             cached = cache_backend.get(key)
+            now = datetime.now()
 
-            if cached is None:
-                # The function call has not yet been cached.
-                result = fn(*args, **kwargs)
-                now = datetime.now()
+            if cached is None or cached.expiration_time < now:
+                # The cached value is expired (or the result was never cached)
+                try:
+                    result = fn(*args, **kwargs)
+                except Exception as exc:
+                    if graceful and cached:
+                        # There was an error executing the function, but we have
+                        # a cached value to fall back to. Log the error and
+                        # return the cached value.
+
+                        logger.exception(exc)
+                        return cached.value
+                    raise
+
                 then = now + parse(timeout)
-                secs = int(mktime(then.timetuple()) - mktime(now.timetuple()))
+                if graceful:
+                    # With the graceful option, we actually want to keep the
+                    # result in the cache until we explicitly override it, in
+                    # case we need it later. The expiration_time will be used
+                    # to determine whether the value should be recalculated
+                    # instead of its absence in the cache.
+                    secs = settings.THROTTLEANDCACHE_MAX_TIMEOUT
+                else:
+                    secs = int(mktime(then.timetuple()) - mktime(now.timetuple()))
                 val = CachedValue(result, now, then)
                 cache_backend.set(key, val, secs)
             else:
