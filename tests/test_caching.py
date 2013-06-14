@@ -45,3 +45,20 @@ def test_nocache():
     decorated()
     decorated()
     assert f.call_count == 2
+
+
+def test_graceful():
+    def f():
+        if f.called:
+            f.errored = True
+            raise Exception
+        f.called = True
+        return SOME_VALUE
+
+    f.called = False
+    f.errored = False
+    decorated = cache('0s', graceful=True)(f)
+    decorated()  # Successful call
+    value = decorated()  # Unsuccessful, but should be handled gracefully.
+    assert f.errored
+    assert value == SOME_VALUE
