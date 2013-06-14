@@ -2,7 +2,6 @@ from hashlib import sha256
 from datetime import datetime, timedelta
 from django.core.cache import get_cache
 from django.utils.decorators import method_decorator
-from .settings import MAX_TIMEOUT
 from django.conf import settings
 from functools import wraps
 
@@ -37,7 +36,7 @@ def cache(timeout=-1, using=None, key_prefix=''):
     cache_backend = get_cache(cache_name)
 
     if timeout == -1:
-        timeout = MAX_TIMEOUT
+        timeout = settings.THROTTLEANDCACHE_MAX_TIMEOUT
 
     def decorator(fn):
         @wraps(fn)

@@ -40,7 +40,9 @@ setup(
     author_email='m@tthewwithanm.com',
     packages=find_packages(),
     include_package_data=True,
-    install_requires=[],
+    install_requires=[
+        'django-appconf>=0.5',
+    ],
     tests_require=[
         'pytest==2.3.5',
         'mock==1.0.1',
