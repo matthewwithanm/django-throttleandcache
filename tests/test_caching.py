@@ -3,6 +3,9 @@ from mock import Mock
 from throttleandcache import cache
 
 
+SOME_VALUE = {'hello': 'world'}
+
+
 def teardown_function(fn):
     cache_obj.clear()
 
@@ -27,9 +30,9 @@ def test_value():
     """
     Makes sure the cached value is correct.
     """
-    f = Mock(__name__='f', return_value='hello world')
+    f = Mock(__name__='f', return_value=SOME_VALUE)
     decorated = cache()(f)
-    assert decorated() == 'hello world'
+    assert decorated() == SOME_VALUE
 
 
 def test_nocache():
