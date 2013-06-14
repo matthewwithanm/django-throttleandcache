@@ -1,5 +1,5 @@
-from distutils.core import setup
 import os
+from setuptools import setup, find_packages
 from setuptools.command.test import test as TestCommand
 import sys
 
@@ -33,11 +33,9 @@ setup(
 
     author='Matthew Tretter',
     author_email='m@tthewwithanm.com',
-    packages=[
-        'throttleandcache',
-    ],
-    package_data={'throttleandcache': []},
-    requires=[],
+    packages=find_packages(),
+    include_package_data=True,
+    install_requires=[],
     tests_require=[
         'pytest==2.3.5',
         'mock==1.0.1',
