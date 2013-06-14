@@ -23,6 +23,10 @@ def test_hours():
     assert parse('2 hours') == relativedelta(hours=2)
 
 
+def test_mixed():
+    assert parse('3 minutes, 2 seconds') == relativedelta(minutes=3, seconds=2)
+
+
 def test_number():
     """
     Seconds should be assumed when a number is passed.
