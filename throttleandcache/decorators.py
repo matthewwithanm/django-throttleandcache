@@ -1,4 +1,5 @@
 from hashlib import sha256
+from datetime import datetime, timedelta
 from django.core.cache import get_cache
 from django.utils.decorators import method_decorator
 from .settings import MAX_TIMEOUT
@@ -11,13 +12,16 @@ def __cache_key(fn, fn_args, fn_kwargs):
     return sha256(key).hexdigest()
 
 
-class NoneResult:
+class CachedValue(object):
     """
-    Because the cache returns None when we try to retrieve a value for a key
-    that doesn't exist, we need some way of representing None in the cache.
-    This class is it.
+    A wrapper for cached values. This allows us to store ``None``, as well as
+    letting us store metadata along with the result in the cache.
+
     """
-    pass
+    def __init__(self, value, set_time, expiration_time):
+        self.value = value
+        self.set_time = set_time
+        self.expiration_time = expiration_time
 
 
 def cache(timeout=-1, using=None, key_prefix=''):
@@ -39,20 +43,16 @@ def cache(timeout=-1, using=None, key_prefix=''):
         @wraps(fn)
         def wrapper(*args, **kwargs):
             key = key_prefix + __cache_key(fn, args, kwargs)
-            cached_value = cache_backend.get(key)
+            cached = cache_backend.get(key)
 
-            if cached_value is None:
+            if cached is None:
                 # The function call has not yet been cached.
                 result = fn(*args, **kwargs)
-                if result is None:
-                    value_to_cache = NoneResult
-                else:
-                    value_to_cache = result
-                cache_backend.set(key, value_to_cache, timeout)
-            elif cached_value is NoneResult:
-                result = None
+                val = CachedValue(result, datetime.now(),
+                                  datetime.now() + timedelta(seconds=timeout))
+                cache_backend.set(key, val, timeout)
             else:
-                result = cached_value
+                result = cached.value
 
             return result
         return wrapper
