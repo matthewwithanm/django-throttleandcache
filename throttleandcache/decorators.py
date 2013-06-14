@@ -4,6 +4,8 @@ from django.core.cache import get_cache
 from django.utils.decorators import method_decorator
 from django.conf import settings
 from functools import wraps
+from time import mktime
+from .tdparse import parse
 
 
 def __cache_key(fn, fn_args, fn_kwargs):
@@ -42,9 +44,11 @@ def cache(timeout=-1, using=None, key_prefix=''):
             if cached is None:
                 # The function call has not yet been cached.
                 result = fn(*args, **kwargs)
-                val = CachedValue(result, datetime.now(),
-                                  datetime.now() + timedelta(seconds=timeout))
-                cache_backend.set(key, val, timeout)
+                now = datetime.now()
+                then = now + parse(timeout)
+                secs = int(mktime(then.timetuple()) - mktime(now.timetuple()))
+                val = CachedValue(result, now, then)
+                cache_backend.set(key, val, secs)
             else:
                 result = cached.value
 
