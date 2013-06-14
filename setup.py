@@ -41,6 +41,7 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     install_requires=[
+        'python-dateutil<2.0a',
         'django-appconf>=0.5',
     ],
     tests_require=[
