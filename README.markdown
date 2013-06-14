@@ -30,9 +30,6 @@ positional (`self`) argument:
     instance_1.my_function() # The original method will be invoked
     instance_2.my_function() # Different "self" argument, so the method is invoked again.
 
-If you wish to cache the result across all instances, make sure the method will
-be called with the same arguments (by making it a static or class method, removing it
-from the class altogether, or using a utility like
-`django.utils.decorators.method_decorator`).
+If you wish to cache the result across all instances, use `@cacheforclass`.
 
 The `cache` decorator also accepts optional `using` and `key_prefix` keyword arguments.

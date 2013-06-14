@@ -1,1 +1,1 @@
-from .decorators import cache
+from .decorators import cache, cacheforclass, cacheforinstance

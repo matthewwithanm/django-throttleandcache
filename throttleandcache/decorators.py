@@ -1,5 +1,6 @@
 from hashlib import sha256
 from django.core.cache import get_cache
+from django.utils.decorators import method_decorator
 from .settings import MAX_TIMEOUT
 from django.conf import settings
 from functools import wraps
@@ -56,6 +57,15 @@ def cache(timeout=-1, using=None, key_prefix=''):
             return result
         return wrapper
     return decorator
+
+
+# Aliases for clarity
+cacheforinstance = cache
+
+
+def cacheforclass(*args, **kwargs):
+    decorator = cache(*args, **kwargs)
+    return method_decorator(decorator)
 
 
 # For backwards compatibility
