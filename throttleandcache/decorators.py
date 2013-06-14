@@ -2,6 +2,7 @@ from hashlib import sha256
 from django.core.cache import get_cache
 from .settings import MAX_TIMEOUT
 from django.conf import settings
+from functools import wraps
 
 
 def __cache_key(fn, fn_args, fn_kwargs):
@@ -33,6 +34,7 @@ def cache_result(timeout=-1, cache=None, key_prefix=''):
         timeout = MAX_TIMEOUT
 
     def decorator(fn):
+        @wraps(fn)
         def wrapper(*args, **kwargs):
             key = key_prefix + __cache_key(fn, args, kwargs)
             cached_value = cache_backend.get(key)
