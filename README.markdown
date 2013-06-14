@@ -8,10 +8,10 @@ Installation
 Usage
 =====
 
-    from throttleandcache.decorators import cache_result
+    from throttleandcache.decorators import cache
 
     # Cache the result of my_function for 3 seconds.
-    @cache_result(3)
+    @cache(3)
     def my_function():
         return 'whatever'
 
@@ -21,7 +21,7 @@ multiple instances means that each invocation will have a different first
 positional (`self`) argument:
 
     class A(object):
-        @cache_result(100)
+        @cache(100)
         def my_function(self):
             print 'The method is being executed!'
 
@@ -35,4 +35,4 @@ be called with the same arguments (by making it a static or class method, removi
 from the class altogether, or using a utility like
 `django.utils.decorators.method_decorator`).
 
-The `cache_result` decorator also accepts optional `cache` and `key_prefix` keyword arguments.
+The `cache` decorator also accepts optional `using` and `key_prefix` keyword arguments.

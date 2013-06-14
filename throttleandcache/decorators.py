@@ -19,16 +19,17 @@ class NoneResult:
     pass
 
 
-def cache_result(timeout=-1, cache=None, key_prefix=''):
+def cache(timeout=-1, using=None, key_prefix=''):
     """
     Cache the result of a function call for <timeout> seconds.
     """
 
-    if cache is None:
+    cache_name = using
+    if cache_name is None:
         # Fall back to CACHE_BACKEND for old versions of django.
-        cache = getattr(settings, 'CACHE_BACKEND', 'default')
+        cache_name = getattr(settings, 'CACHE_BACKEND', 'default')
 
-    cache_backend = get_cache(cache)
+    cache_backend = get_cache(cache_name)
 
     if timeout == -1:
         timeout = MAX_TIMEOUT
@@ -55,3 +56,8 @@ def cache_result(timeout=-1, cache=None, key_prefix=''):
             return result
         return wrapper
     return decorator
+
+
+# For backwards compatibility
+def cache_result(timeout=-1, cache=None, key_prefix=''):
+    return cache(timeout, cache, key_prefix)

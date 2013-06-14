@@ -1,14 +1,14 @@
-from django.core.cache import cache
+from django.core.cache import cache as cache_obj
 from mock import Mock
-from throttleandcache.decorators import cache_result
+from throttleandcache.decorators import cache
 
 
 def teardown_function(fn):
-    cache.clear()
+    cache_obj.clear()
 
 
 def test_none():
-    fn = cache_result()(lambda: None)
+    fn = cache()(lambda: None)
     assert fn() is None
 
 
@@ -17,7 +17,7 @@ def test_caching():
     Makes sure the cache is actually used.
     """
     f = Mock(__name__='f', return_value=None)
-    decorated = cache_result()(f)
+    decorated = cache()(f)
     decorated()
     decorated()
     assert f.call_count == 1
@@ -28,7 +28,7 @@ def test_value():
     Makes sure the cached value is correct.
     """
     f = Mock(__name__='f', return_value='hello world')
-    decorated = cache_result()(f)
+    decorated = cache()(f)
     assert decorated() == 'hello world'
 
 
@@ -38,7 +38,7 @@ def test_nocache():
     timeout.
     """
     f = Mock(__name__='f', return_value=None)
-    decorated = cache_result(timeout=0)(f)
+    decorated = cache(timeout=0)(f)
     decorated()
     decorated()
     assert f.call_count == 2
