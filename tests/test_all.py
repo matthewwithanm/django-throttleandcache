@@ -1,6 +1,6 @@
 from django.core.cache import cache as cache_obj
 from mock import Mock
-from throttleandcache.decorators import cache
+from throttleandcache import cache
 
 
 def teardown_function(fn):

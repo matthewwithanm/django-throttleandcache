@@ -8,7 +8,7 @@ Installation
 Usage
 =====
 
-    from throttleandcache.decorators import cache
+    from throttleandcache import cache
 
     # Cache the result of my_function for 3 seconds.
     @cache(3)
