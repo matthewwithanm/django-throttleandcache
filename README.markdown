@@ -1,7 +1,7 @@
 Installation
 ============
 
-1. `pip install -e git+git://github.com/matthewwithanm/django-throttleandcache.git#egg=django-throttleandcache`
+1. `pip install django-throttleandcache`
 2. Set a cache backend in your `settings.py` file.
 
 
