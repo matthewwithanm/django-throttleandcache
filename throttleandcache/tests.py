@@ -3,7 +3,7 @@ from .decorators import cache_result
 
 
 class CacheDecoratorTest(TestCase):
-    
+
     def __init__(self, *args, **kwargs):
         self._call_counts = {
             '_uncached_fn': 0,
@@ -14,21 +14,21 @@ class CacheDecoratorTest(TestCase):
     @cache_result()
     def _return_none(self):
         return None
-    
+
     @cache_result(0)
     def _uncached_fn(self):
         self._call_counts['_uncached_fn'] += 1
         return 1
-        
+
     @cache_result()
     def _test_caching_fn(self):
         self._call_counts['_test_caching_fn'] += 1
         return 1
-        
+
     @cache_result()
     def _test_value_fn(self):
         return 'any value'
-    
+
     def test_none(self):
         self._return_none()
         self.assertTrue(self._return_none() is None, 'The expected value was not returned from the cache.')
@@ -40,7 +40,7 @@ class CacheDecoratorTest(TestCase):
         self._test_caching_fn()
         self._test_caching_fn()
         self.assertEqual(self._call_counts['_test_caching_fn'], 1, 'The function was called when the cached value should have been used.')
-    
+
     def test_value(self):
         """
         Makes sure the cached value is correct.

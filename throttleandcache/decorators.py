@@ -22,21 +22,21 @@ def cache_result(timeout=-1, cache=None, key_prefix=''):
     """
     Cache the result of a function call for <timeout> seconds.
     """
-    
+
     if cache is None:
         # Fall back to CACHE_BACKEND for old versions of django.
         cache = getattr(settings, 'CACHE_BACKEND', 'default')
-    
+
     cache_backend = get_cache(cache)
-    
+
     if timeout == -1:
         timeout = MAX_TIMEOUT
-    
+
     def decorator(fn):
         def wrapper(*args, **kwargs):
             key = key_prefix + __cache_key(fn, args, kwargs)
             cached_value = cache_backend.get(key)
-            
+
             if cached_value is None:
                 # The function call has not yet been cached.
                 result = fn(*args, **kwargs)
@@ -49,7 +49,7 @@ def cache_result(timeout=-1, cache=None, key_prefix=''):
                 result = None
             else:
                 result = cached_value
-            
+
             return result
         return wrapper
     return decorator
