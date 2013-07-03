@@ -62,3 +62,12 @@ def test_graceful():
     value = decorated()  # Unsuccessful, but should be handled gracefully.
     assert f.errored
     assert value == SOME_VALUE
+
+
+def test_change_timeout():
+    f = Mock(__name__='f', return_value=SOME_VALUE)
+    decorated = cache()(f)  # Cache FOREVER
+    decorated()  # Warm cache
+    f.return_value = None
+    assert decorated() == SOME_VALUE
+    assert cache(0)(f)() is None
