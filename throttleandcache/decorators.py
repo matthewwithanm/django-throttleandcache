@@ -36,6 +36,8 @@ def cache(timeout=-1, using=None, key_prefix='', graceful=False):
     if timeout == -1:
         timeout = settings.THROTTLEANDCACHE_MAX_TIMEOUT
 
+    expires_in = parse(timeout)
+
     def decorator(fn):
         @wraps(fn)
         def wrapper(*args, **kwargs):
@@ -43,12 +45,18 @@ def cache(timeout=-1, using=None, key_prefix='', graceful=False):
             cached = cache_backend.get(key)
             now = datetime.now()
 
-            if cached is None or cached.expiration_time < now:
-                # The cached value is expired (or the result was never cached)
+            if cached:
+                expiration_time = cached.set_time + expires_in
+                expiration_time_changed = expiration_time != cached.expiration_time
+
+            if not cached or expiration_time < now or expiration_time_changed:
+                # The cached value is expired, the result was never cached, or
+                # the expiration time has changed. We need to generate a new
+                # value.
                 try:
                     result = fn(*args, **kwargs)
                 except Exception as exc:
-                    if graceful and cached:
+                    if graceful and cached and not expiration_time_changed:
                         # There was an error executing the function, but we have
                         # a cached value to fall back to. Log the error and
                         # return the cached value.
@@ -57,7 +65,7 @@ def cache(timeout=-1, using=None, key_prefix='', graceful=False):
                         return cached.value
                     raise
 
-                then = now + parse(timeout)
+                then = now + expires_in
                 if graceful:
                     # With the graceful option, we actually want to keep the
                     # result in the cache until we explicitly override it, in
