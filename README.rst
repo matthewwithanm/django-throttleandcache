@@ -17,6 +17,8 @@ Installation
 Usage
 =====
 
+.. code-block:: python
+
     from throttleandcache import cache
 
     # Cache the result of my_function for 3 seconds.
@@ -28,6 +30,8 @@ If you call the function multiple times *with the same arguments*, the result
 will be fetched from the cache. In order to invalidate the cache for that call,
 call `my_function.invalidate()` with the same arguments:
 
+.. code-block:: python
+
     my_function()
     my_function() # Result pulled from cache
     my_function.invalidate()
@@ -35,6 +39,8 @@ call `my_function.invalidate()` with the same arguments:
 
 Remember that calling the same method on multiple instances means that each
 invocation will have a different first positional (`self`) argument:
+
+.. code-block:: python
 
     class A(object):
         @cache('100s')

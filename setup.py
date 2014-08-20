@@ -7,7 +7,7 @@ import sys
 read = lambda fname: open(os.path.join(os.path.dirname(__file__), fname)).read()
 
 
-README = read('README.markdown')
+README = read('README.rst')
 
 
 class PyTest(TestCommand):
