@@ -71,3 +71,39 @@ def test_change_timeout():
     f.return_value = None
     assert decorated() == SOME_VALUE
     assert cache(0)(f)() is None
+
+
+def test_invalidate():
+    """
+    Ensure that invalidate clears the cache.
+    """
+    f = Mock(__name__='f', return_value=None)
+    decorated = cache()(f)
+    decorated()
+    decorated.invalidate()
+    decorated()
+    assert f.call_count == 2
+
+
+def test_invalidate_args():
+    """
+    Ensure that invalidate clears the cache for the provided args.
+    """
+    f = Mock(__name__='f', return_value=None)
+    decorated = cache()(f)
+    decorated(1)
+    decorated.invalidate(1)
+    decorated(1)
+    assert f.call_count == 2
+
+
+def test_only_invalidate_args():
+    """
+    Ensure that invalidate doesn't clear the cache for other args.
+    """
+    f = Mock(__name__='f', return_value=None)
+    decorated = cache()(f)
+    decorated(1)
+    decorated.invalidate(2)
+    decorated(1)
+    assert f.call_count == 1
