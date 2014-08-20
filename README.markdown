@@ -4,6 +4,7 @@ Features
 - Graceful handling of errors (can fall back to cached value)
 - Readable duration strings (`'1 day'` vs `86400`)
 - Correct handling of `None`
+- Per-call invalidation
 
 
 Installation
