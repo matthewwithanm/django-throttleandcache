@@ -81,6 +81,22 @@ def cache(timeout=-1, using=None, key_prefix='', graceful=False):
                 result = cached.value
 
             return result
+
+        def invalidate(*args, **kwargs):
+            key = key_prefix + __cache_key(fn, args, kwargs)
+
+            if graceful:
+                # Update the CachedValue's expiration time. This allows
+                # subsequent calls to still fall back to the cached value if
+                # there's an error.
+                val = cache_backend.get(key)
+                val.expiration_time = -1
+                cache_backend.set(key, val, settings.THROTTLEANDCACHE_MAX_TIMEOUT)
+            else:
+                cache_backend.delete(key)
+
+        wrapper.invalidate = invalidate
+
         return wrapper
     return decorator
 
