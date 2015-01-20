@@ -9,8 +9,12 @@ from .logging import logger
 from .tdparse import parse
 
 
+to_key = lambda *args: ''.join(map(str, args))
+fn_key = lambda fn: fn.__module__ + fn.__name__
+
+
 def default_key_func(fn, *fn_args, **fn_kwargs):
-    key = fn.__module__ + fn.__name__ + repr(fn_args) + repr(fn_kwargs)
+    key = to_key(fn_key(fn), repr(fn_args), repr(fn_kwargs))
     return sha256(key).hexdigest()
 
 
