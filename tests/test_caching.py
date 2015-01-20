@@ -107,3 +107,15 @@ def test_only_invalidate_args():
     decorated.invalidate(2)
     decorated(1)
     assert f.call_count == 1
+
+
+def test_key_func():
+    """
+    Test that the provided key function is used.
+    """
+    f = Mock(__name__='f', return_value=None)
+    g = Mock(__name__='g', return_value=None)
+    key_func = lambda fn, *args, **kwargs: 'key'
+    cache(key_func=key_func)(f)()
+    cache(key_func=key_func)(g)()
+    assert g.call_count == 0
