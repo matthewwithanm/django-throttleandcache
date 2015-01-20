@@ -46,7 +46,12 @@ def cache(timeout=-1, using=None, key_prefix='', graceful=False,
     def decorator(fn):
         @wraps(fn)
         def wrapper(*args, **kwargs):
-            key = key_prefix + key_func(fn, *args, **kwargs)
+            unprefixed_key = key_func(fn, *args, **kwargs)
+
+            if unprefixed_key is None:
+                return fn(*args, **kwargs)
+
+            key = key_prefix + unprefixed_key
             cached = cache_backend.get(key)
             now = datetime.now()
 
@@ -88,7 +93,12 @@ def cache(timeout=-1, using=None, key_prefix='', graceful=False,
             return result
 
         def invalidate(*args, **kwargs):
-            key = '%s%s' % (key_prefix, key_func(fn, *args, **kwargs))
+            unprefixed_key = key_func(fn, *args, **kwargs)
+
+            if unprefixed_key is None:
+                return
+
+            key = '%s%s' % (key_prefix, unprefixed_key)
 
             if graceful:
                 # Update the CachedValue's expiration time. This allows

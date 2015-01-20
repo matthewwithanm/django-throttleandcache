@@ -119,3 +119,15 @@ def test_key_func():
     cache(key_func=key_func)(f)()
     cache(key_func=key_func)(g)()
     assert g.call_count == 0
+
+
+def test_key_func_nocache():
+    """
+    Test that returning ``None`` from the key function bypasses the cache.
+    """
+    f = Mock(__name__='f', return_value=None)
+    key_func = lambda fn, *args, **kwargs: None
+    decorated = cache(key_func=key_func)(f)
+    decorated(1)
+    decorated(1)
+    assert f.call_count == 2
