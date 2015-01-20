@@ -9,7 +9,7 @@ from .logging import logger
 from .tdparse import parse
 
 
-def __cache_key(fn, fn_args, fn_kwargs):
+def default_key_func(fn, *fn_args, **fn_kwargs):
     key = fn.__module__ + fn.__name__ + repr(fn_args) + repr(fn_kwargs)
     return sha256(key).hexdigest()
 
@@ -26,7 +26,8 @@ class CachedValue(object):
         self.expiration_time = expiration_time
 
 
-def cache(timeout=-1, using=None, key_prefix='', graceful=False):
+def cache(timeout=-1, using=None, key_prefix='', graceful=False,
+          key_func=default_key_func):
     """
     Cache the result of a function call for <timeout> seconds.
     """
@@ -41,7 +42,7 @@ def cache(timeout=-1, using=None, key_prefix='', graceful=False):
     def decorator(fn):
         @wraps(fn)
         def wrapper(*args, **kwargs):
-            key = key_prefix + __cache_key(fn, args, kwargs)
+            key = key_prefix + key_func(fn, *args, **kwargs)
             cached = cache_backend.get(key)
             now = datetime.now()
 
@@ -83,7 +84,7 @@ def cache(timeout=-1, using=None, key_prefix='', graceful=False):
             return result
 
         def invalidate(*args, **kwargs):
-            key = key_prefix + __cache_key(fn, args, kwargs)
+            key = '%s%s' % (key_prefix, key_func(fn, *args, **kwargs))
 
             if graceful:
                 # Update the CachedValue's expiration time. This allows

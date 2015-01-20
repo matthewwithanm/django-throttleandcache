@@ -63,6 +63,8 @@ The `cache` decorator also accepts the following (optional) keyword arguments:
 
 - **using**: specifies which cache to use.
 - **key_prefix**: A string to prefix your cache key with.
+- **key_func**: A function for deriving the cache key. This function will be
+    passed the ``fn``, ``*args``, and ``**kwargs``.
 - **graceful**: This argument specifies how errors should be handled. If
     `graceful` is `True` and your function raises an error, throttleandcache
     will log the error and return the cached value. If no cached value exists,
