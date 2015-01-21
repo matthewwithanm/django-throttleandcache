@@ -150,9 +150,11 @@ def cache(timeout=-1, using=None, key_prefix='', graceful=False,
                 # Update the CachedValue's expiration time. This allows
                 # subsequent calls to still fall back to the cached value if
                 # there's an error.
-                val = cache_backend.get(key)
-                val.expiration_time = -1
-                cache_backend.set(key, val, settings.THROTTLEANDCACHE_MAX_TIMEOUT)
+                cached = cache_backend.get(key)
+                if cached:
+                    cached.expiration_time = -1
+                    cache_backend.set(key, cached,
+                                      settings.THROTTLEANDCACHE_MAX_TIMEOUT)
             else:
                 cache_backend.delete(key)
 
