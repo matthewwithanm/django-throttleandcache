@@ -72,7 +72,7 @@ def get_result(key, fn, args, kwargs, timeout, cache_name, graceful,
             if expiration_time != cached.expiration_time:
                 # Update the expiration time.
                 cached.expiration_time = expiration_time
-                cache_backend.set(key, cached, get_ttl(expiration_time))
+                cache_backend.set(key, cached, get_ttl(expiration_time, now))
             return cached.value
 
         # The cached value is expired, but we'll use it anyway and get
