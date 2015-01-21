@@ -58,6 +58,7 @@ def get_result(key, fn, args, kwargs, timeout, cache_name, graceful,
     if timeout == -1:
         timeout = settings.THROTTLEANDCACHE_MAX_TIMEOUT
 
+    keep_expired = graceful or background
     expires_in = parse(timeout)
     cache_backend = get_cache_backend(cache_name)
     cached = cache_backend.get(key)
@@ -96,12 +97,11 @@ def get_result(key, fn, args, kwargs, timeout, cache_name, graceful,
         raise
 
     then = now + expires_in
-    if graceful:
-        # With the graceful option, we actually want to keep the
-        # result in the cache until we explicitly override it, in
-        # case we need it later. The expiration_time will be used
-        # to determine whether the value should be recalculated
-        # instead of its absence in the cache.
+    if keep_expired:
+        # With the graceful and background options, we actually want to keep
+        # the result in the cache until we explicitly override it, in case we
+        # need it later. The expiration_time will be used to determine whether
+        # the value should be recalculated instead of its absence in the cache.
         ttl = settings.THROTTLEANDCACHE_MAX_TIMEOUT
     else:
         ttl = get_ttl(then, now)
@@ -145,8 +145,9 @@ def cache(timeout=-1, using=None, key_prefix='', graceful=False,
                 return
 
             cache_backend = get_cache_backend(using)
+            keep_expired = graceful or background
 
-            if graceful:
+            if keep_expired:
                 # Update the CachedValue's expiration time. This allows
                 # subsequent calls to still fall back to the cached value if
                 # there's an error.
