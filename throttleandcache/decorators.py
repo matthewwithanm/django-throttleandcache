@@ -9,6 +9,9 @@ from .logging import logger
 from .tdparse import parse
 
 
+__all__ = ['cache', 'cacheforclass', 'cacheforinstance', 'cache_result']
+
+
 to_key = lambda *args: ''.join(map(str, args))
 fn_key = lambda fn: fn.__module__ + fn.__name__
 
@@ -37,77 +40,111 @@ def get_ttl(expiration_time, now):
     return int(mktime(expiration_time.timetuple()) - mktime(now.timetuple()))
 
 
-def cache(timeout=-1, using=None, key_prefix='', graceful=False,
-          key_func=default_key_func):
+def get_cache_backend(name=None):
+    return get_cache(name or settings.THROTTLEANDCACHE_DEFAULT_CACHE)
+
+
+def get_result(key, fn, args, kwargs, timeout, cache_name, graceful,
+               background):
     """
-    Cache the result of a function call for <timeout> seconds.
+    Get the result of the provided operation. The function will not actually be
+    called if an unexpired value can be found in the cache.
     """
 
-    cache_backend = get_cache(using or settings.THROTTLEANDCACHE_DEFAULT_CACHE)
+    # A key of `None` tells us not to use the cache.
+    if key is None:
+        return fn(*args, **kwargs)
 
     if timeout == -1:
         timeout = settings.THROTTLEANDCACHE_MAX_TIMEOUT
 
     expires_in = parse(timeout)
+    cache_backend = get_cache_backend(cache_name)
+    cached = cache_backend.get(key)
+    now = datetime.now()
+
+    if cached:
+        expiration_time = cached.set_time + expires_in
+
+        if expiration_time > now:
+            if expiration_time != cached.expiration_time:
+                # Update the expiration time.
+                cached.expiration_time = expiration_time
+                cache_backend.set(key, cached, get_ttl(expiration_time))
+            return cached.value
+
+        # The cached value is expired, but we'll use it anyway and get
+        # a new value in a background process.
+        if background:
+            _get_result.delay(key=key, fn=fn, args=args, kwargs=kwargs,
+                              timeout=timeout, cache_name=cache_name,
+                              graceful=False, background=False)
+            return cached.value
+
+    # The cached value is expired or the result was never cached. We
+    # need to generate a new value.
+    try:
+        result = fn(*args, **kwargs)
+    except Exception as exc:
+        if graceful and cached:
+            # There was an error executing the function, but we have
+            # a cached value to fall back to. Log the error and
+            # return the cached value.
+
+            logger.exception(exc)
+            return cached.value
+        raise
+
+    then = now + expires_in
+    if graceful:
+        # With the graceful option, we actually want to keep the
+        # result in the cache until we explicitly override it, in
+        # case we need it later. The expiration_time will be used
+        # to determine whether the value should be recalculated
+        # instead of its absence in the cache.
+        ttl = settings.THROTTLEANDCACHE_MAX_TIMEOUT
+    else:
+        ttl = get_ttl(then, now)
+    val = CachedValue(result, now, then)
+    cache_backend.set(key, val, ttl)
+
+    return result
+
+
+try:
+    from celery import task
+except ImportError:
+    pass
+else:
+    _get_result = task(ignore_result=True, serializer='pickle')(get_result)
+
+
+def get_key(prefix, key_func, fn, args, kwargs):
+    unprefixed_key = key_func(fn, *args, **kwargs)
+    return '%s%s' % (prefix, unprefixed_key) if unprefixed_key else None
+
+
+def cache(timeout=-1, using=None, key_prefix='', graceful=False,
+          key_func=default_key_func, background=False):
+    """
+    Cache the result of a function call for <timeout> seconds.
+    """
 
     def decorator(fn):
         @wraps(fn)
         def wrapper(*args, **kwargs):
-            unprefixed_key = key_func(fn, *args, **kwargs)
-
-            if unprefixed_key is None:
-                return fn(*args, **kwargs)
-
-            key = key_prefix + unprefixed_key
-            cached = cache_backend.get(key)
-            now = datetime.now()
-
-            if cached:
-                expiration_time = cached.set_time + expires_in
-
-                if expiration_time > now:
-                    if expiration_time != cached.expiration_time:
-                        # Update the expiration time.
-                        cached.expiration_time = expiration_time
-                        cache_backend.set(key, cached, get_ttl(expiration_time))
-                    return cached.value
-
-            # The cached value is expired or the result was never cached. We
-            # need to generate a new value.
-            try:
-                result = fn(*args, **kwargs)
-            except Exception as exc:
-                if graceful and cached:
-                    # There was an error executing the function, but we have
-                    # a cached value to fall back to. Log the error and
-                    # return the cached value.
-
-                    logger.exception(exc)
-                    return cached.value
-                raise
-
-            then = now + expires_in
-            if graceful:
-                # With the graceful option, we actually want to keep the
-                # result in the cache until we explicitly override it, in
-                # case we need it later. The expiration_time will be used
-                # to determine whether the value should be recalculated
-                # instead of its absence in the cache.
-                ttl = settings.THROTTLEANDCACHE_MAX_TIMEOUT
-            else:
-                ttl = get_ttl(then, now)
-            val = CachedValue(result, now, then)
-            cache_backend.set(key, val, ttl)
-
-            return result
+            key = get_key(key_prefix, key_func, fn, args, kwargs)
+            return get_result(key=key, fn=fn, args=args, kwargs=kwargs,
+                              timeout=timeout, cache_name=using,
+                              graceful=graceful, background=background)
 
         def invalidate(*args, **kwargs):
-            unprefixed_key = key_func(fn, *args, **kwargs)
+            key = get_key(key_prefix, key_func, fn, args, kwargs)
 
-            if unprefixed_key is None:
+            if key is None:
                 return
 
-            key = '%s%s' % (key_prefix, unprefixed_key)
+            cache_backend = get_cache_backend(using)
 
             if graceful:
                 # Update the CachedValue's expiration time. This allows
