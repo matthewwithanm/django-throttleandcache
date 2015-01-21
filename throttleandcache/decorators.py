@@ -64,38 +64,40 @@ def cache(timeout=-1, using=None, key_prefix='', graceful=False,
 
             if cached:
                 expiration_time = cached.set_time + expires_in
-                expiration_time_changed = expiration_time != cached.expiration_time
 
-            if not cached or expiration_time < now or expiration_time_changed:
-                # The cached value is expired, the result was never cached, or
-                # the expiration time has changed. We need to generate a new
-                # value.
-                try:
-                    result = fn(*args, **kwargs)
-                except Exception as exc:
-                    if graceful and cached and not expiration_time_changed:
-                        # There was an error executing the function, but we have
-                        # a cached value to fall back to. Log the error and
-                        # return the cached value.
+                if expiration_time > now:
+                    if expiration_time != cached.expiration_time:
+                        # Update the expiration time.
+                        cached.expiration_time = expiration_time
+                        cache_backend.set(key, cached, get_ttl(expiration_time))
+                    return cached.value
 
-                        logger.exception(exc)
-                        return cached.value
-                    raise
+            # The cached value is expired or the result was never cached. We
+            # need to generate a new value.
+            try:
+                result = fn(*args, **kwargs)
+            except Exception as exc:
+                if graceful and cached:
+                    # There was an error executing the function, but we have
+                    # a cached value to fall back to. Log the error and
+                    # return the cached value.
 
-                then = now + expires_in
-                if graceful:
-                    # With the graceful option, we actually want to keep the
-                    # result in the cache until we explicitly override it, in
-                    # case we need it later. The expiration_time will be used
-                    # to determine whether the value should be recalculated
-                    # instead of its absence in the cache.
-                    ttl = settings.THROTTLEANDCACHE_MAX_TIMEOUT
-                else:
-                    ttl = get_ttl(then, now)
-                val = CachedValue(result, now, then)
-                cache_backend.set(key, val, ttl)
+                    logger.exception(exc)
+                    return cached.value
+                raise
+
+            then = now + expires_in
+            if graceful:
+                # With the graceful option, we actually want to keep the
+                # result in the cache until we explicitly override it, in
+                # case we need it later. The expiration_time will be used
+                # to determine whether the value should be recalculated
+                # instead of its absence in the cache.
+                ttl = settings.THROTTLEANDCACHE_MAX_TIMEOUT
             else:
-                result = cached.value
+                ttl = get_ttl(then, now)
+            val = CachedValue(result, now, then)
+            cache_backend.set(key, val, ttl)
 
             return result
 
