@@ -30,6 +30,13 @@ class CachedValue(object):
         self.expiration_time = expiration_time
 
 
+def get_ttl(expiration_time, now):
+    """
+    Convert an expiration time into a TTL in seconds.
+    """
+    return int(mktime(expiration_time.timetuple()) - mktime(now.timetuple()))
+
+
 def cache(timeout=-1, using=None, key_prefix='', graceful=False,
           key_func=default_key_func):
     """
@@ -82,11 +89,11 @@ def cache(timeout=-1, using=None, key_prefix='', graceful=False,
                     # case we need it later. The expiration_time will be used
                     # to determine whether the value should be recalculated
                     # instead of its absence in the cache.
-                    secs = settings.THROTTLEANDCACHE_MAX_TIMEOUT
+                    ttl = settings.THROTTLEANDCACHE_MAX_TIMEOUT
                 else:
-                    secs = int(mktime(then.timetuple()) - mktime(now.timetuple()))
+                    ttl = get_ttl(then, now)
                 val = CachedValue(result, now, then)
-                cache_backend.set(key, val, secs)
+                cache_backend.set(key, val, ttl)
             else:
                 result = cached.value
 
