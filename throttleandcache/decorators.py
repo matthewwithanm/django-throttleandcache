@@ -45,7 +45,7 @@ def get_cache_backend(name=None):
 
 
 def get_result(key, fn, args, kwargs, timeout, cache_name, graceful,
-               background):
+               background, keep_expired=None):
     """
     Get the result of the provided operation. The function will not actually be
     called if an unexpired value can be found in the cache.
@@ -58,7 +58,8 @@ def get_result(key, fn, args, kwargs, timeout, cache_name, graceful,
     if timeout == -1:
         timeout = settings.THROTTLEANDCACHE_MAX_TIMEOUT
 
-    keep_expired = graceful or background
+    keep_expired = (graceful or background if keep_expired is None
+                    else keep_expired)
     expires_in = parse(timeout)
     cache_backend = get_cache_backend(cache_name)
     cached = cache_backend.get(key)
@@ -83,7 +84,8 @@ def get_result(key, fn, args, kwargs, timeout, cache_name, graceful,
             from celery import task  # noqa
             _get_result.delay(key=key, fn=fn, args=args, kwargs=kwargs,
                               timeout=timeout, cache_name=cache_name,
-                              graceful=False, background=False)
+                              graceful=False, background=False,
+                              keep_expired=True)
             return cached.value
 
     # The cached value is expired or the result was never cached. We
