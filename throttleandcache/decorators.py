@@ -77,6 +77,10 @@ def get_result(key, fn, args, kwargs, timeout, cache_name, graceful,
         # The cached value is expired, but we'll use it anyway and get
         # a new value in a background process.
         if background:
+            # Try importing Celery. This way, trying to use ``background=True``
+            # without installing Celery will give an error that clues you in to
+            # the reason.
+            from celery import task  # noqa
             _get_result.delay(key=key, fn=fn, args=args, kwargs=kwargs,
                               timeout=timeout, cache_name=cache_name,
                               graceful=False, background=False)
