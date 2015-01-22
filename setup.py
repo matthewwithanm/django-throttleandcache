@@ -48,7 +48,11 @@ setup(
         'pytest==2.3.5',
         'mock==1.0.1',
         'Django',
+        'celery',
     ],
+    extras_require={
+        'async': ['celery>=3.0'],
+    },
     cmdclass={'test': PyTest},
     zip_safe=False,
     classifiers=[

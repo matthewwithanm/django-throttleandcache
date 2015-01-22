@@ -6,3 +6,5 @@ CACHES = {
         'LOCATION': 'test-cache',
     }
 }
+
+CELERY_ALWAYS_EAGER = True

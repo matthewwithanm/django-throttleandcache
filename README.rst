@@ -2,6 +2,7 @@ Features
 ========
 
 - Graceful handling of errors (can fall back to cached value)
+- Calculate results in background (requires Celery_)
 - Readable duration strings (`'1 day'` vs `86400`)
 - Correct handling of `None`
 - Per-call invalidation
@@ -37,6 +38,18 @@ call `my_function.invalidate()` with the same arguments:
     my_function.invalidate()
     my_function() # Not from cache
 
+If Celery_ is installed, you can remove the the calculation of new values from
+the request/response cycle:
+
+.. code-block:: python
+
+    @cache('3s', background=True)
+    def my_function():
+        return 'whatever'
+
+Note that, in the case of a cold cache, the value will still be calculated
+synchronously. Stale values may be used while new ones are being calculated.
+
 Remember that calling the same method on multiple instances means that each
 invocation will have a different first positional (`self`) argument:
 
@@ -69,3 +82,8 @@ The `cache` decorator also accepts the following (optional) keyword arguments:
     `graceful` is `True` and your function raises an error, throttleandcache
     will log the error and return the cached value. If no cached value exists,
     the original error is raised.
+- **background**: Specifies that new values should be calculated in the
+    background (using Celery_).
+
+
+.. _Celery: http://www.celeryproject.org/

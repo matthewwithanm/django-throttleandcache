@@ -1,5 +1,5 @@
 from django.core.cache import cache as cache_obj
-from mock import Mock
+from mock import Mock, patch
 from throttleandcache import cache
 
 
@@ -131,3 +131,24 @@ def test_key_func_nocache():
     decorated(1)
     decorated(1)
     assert f.call_count == 2
+
+
+def test_background():
+    """
+    Test that caching in the background will actually call the celery task.
+    """
+    f = Mock(__name__='f', return_value=SOME_VALUE)
+    with patch('throttleandcache.decorators._get_result.delay') as mocked:
+        # Use a zero timeout to make sure that the value is expired for
+        # subsequent calls.
+        decorated = cache(timeout=0, background=True)(f)
+
+        # With a cold cache, the call should be synchronous.
+        decorated()
+        assert f.call_count == 1
+        assert mocked.call_count == 0
+
+        # After that, the Celery task should be used.
+        decorated()
+        assert f.call_count == 1
+        assert mocked.call_count == 1
