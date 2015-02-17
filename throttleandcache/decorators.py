@@ -33,10 +33,17 @@ class CachedValue(object):
         self.expiration_time = expiration_time
 
 
-def get_ttl(expiration_time, now):
+def get_ttl(expiration_time, now, keep_expired=False):
     """
     Convert an expiration time into a TTL in seconds.
     """
+    if keep_expired:
+        # With the graceful and background options, we actually want to keep
+        # the result in the cache until we explicitly override it, in case we
+        # need it later. The expiration_time will be used to determine whether
+        # the value should be recalculated instead of its absence in the cache.
+        return settings.THROTTLEANDCACHE_MAX_TIMEOUT
+
     return int(mktime(expiration_time.timetuple()) - mktime(now.timetuple()))
 
 
@@ -72,7 +79,8 @@ def get_result(key, fn, args, kwargs, timeout, cache_name, graceful,
             if expiration_time != cached.expiration_time:
                 # Update the expiration time.
                 cached.expiration_time = expiration_time
-                cache_backend.set(key, cached, get_ttl(expiration_time, now))
+                cache_backend.set(key, cached,
+                                  get_ttl(expiration_time, now, keep_expired))
             return cached.value
 
         # The cached value is expired, but we'll use it anyway and get
@@ -103,14 +111,7 @@ def get_result(key, fn, args, kwargs, timeout, cache_name, graceful,
         raise
 
     then = now + expires_in
-    if keep_expired:
-        # With the graceful and background options, we actually want to keep
-        # the result in the cache until we explicitly override it, in case we
-        # need it later. The expiration_time will be used to determine whether
-        # the value should be recalculated instead of its absence in the cache.
-        ttl = settings.THROTTLEANDCACHE_MAX_TIMEOUT
-    else:
-        ttl = get_ttl(then, now)
+    ttl = get_ttl(then, now, keep_expired)
     val = CachedValue(result, now, then)
     cache_backend.set(key, val, ttl)
 
