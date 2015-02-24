@@ -87,10 +87,7 @@ def get_result(key, fn, args, kwargs, timeout, cache_name, graceful,
         # The cached value is expired, but we'll use it anyway and get
         # a new value in a background process.
         if background:
-            # Try importing Celery. This way, trying to use ``background=True``
-            # without installing Celery will give an error that clues you in to
-            # the reason.
-            from celery import task  # noqa
+            from .tasks import _get_result
             _get_result.delay(key=key, fn=fn, args=args, kwargs=kwargs,
                               timeout=timeout, cache_name=cache_name,
                               graceful=False, background=False,
@@ -117,14 +114,6 @@ def get_result(key, fn, args, kwargs, timeout, cache_name, graceful,
     cache_backend.set(key, val, ttl)
 
     return result
-
-
-try:
-    from celery import task
-except ImportError:
-    pass
-else:
-    _get_result = task(ignore_result=True, serializer='pickle')(get_result)
 
 
 def get_key(prefix, key_func, fn, args, kwargs):

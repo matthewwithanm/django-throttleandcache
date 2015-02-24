@@ -139,7 +139,7 @@ def test_background():
     Test that caching in the background will actually call the celery task.
     """
     f = Mock(__name__='f', return_value=SOME_VALUE)
-    with patch('throttleandcache.decorators._get_result.delay') as mocked:
+    with patch('throttleandcache.tasks._get_result.delay') as mocked:
         # Use a zero timeout to make sure that the value is expired for
         # subsequent calls.
         decorated = cache(timeout=0, background=True)(f)
@@ -180,7 +180,7 @@ def test_background_serialization():
     val.set_time = datetime(2000, 1, 1)
     cache_obj.set(THE_KEY, val)
 
-    with patch('throttleandcache.decorators._get_result.delay') as mocked:
+    with patch('throttleandcache.tasks._get_result.delay') as mocked:
         get_value()
         args, kwargs = mocked.call_args
         assert kwargs['fn'] == get_value
