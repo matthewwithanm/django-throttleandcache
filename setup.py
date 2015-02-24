@@ -19,6 +19,7 @@ class PyTest(TestCommand):
     def run_tests(self):
         import pytest
         os.environ['DJANGO_SETTINGS_MODULE'] = 'tests.settings'
+        os.environ['CELERY_CONFIG_MODULE'] = 'tests.celeryconfig'
         errno = pytest.main(self.test_args)
         sys.exit(errno)
 
