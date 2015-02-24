@@ -1,3 +1,4 @@
+from datetime import datetime
 from django.core.cache import cache as cache_obj
 from mock import Mock, patch
 from throttleandcache import cache
@@ -152,3 +153,34 @@ def test_background():
         decorated()
         assert f.call_count == 1
         assert mocked.call_count == 1
+
+
+THE_KEY = 'the_key'
+
+
+def get_value():
+    return None
+
+
+def key_func(*args, **kwargs):
+    return THE_KEY
+
+original_get_value = get_value
+get_value = cache('1 day', key_func=key_func, background=True)(get_value)
+
+
+def test_background_serialization():
+    """Make sure that the wrapped function is what's serialized."""
+
+    # Prime the cache
+    get_value()
+
+    # Update the set_time to make sure we trigger a background process.
+    val = cache_obj.get(THE_KEY)
+    val.set_time = datetime(2000, 1, 1)
+    cache_obj.set(THE_KEY, val)
+
+    with patch('throttleandcache.decorators._get_result.delay') as mocked:
+        get_value()
+        args, kwargs = mocked.call_args
+        assert kwargs['fn'] == get_value

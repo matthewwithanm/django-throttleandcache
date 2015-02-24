@@ -57,10 +57,11 @@ def get_result(key, fn, args, kwargs, timeout, cache_name, graceful,
     Get the result of the provided operation. The function will not actually be
     called if an unexpired value can be found in the cache.
     """
+    original_fn = fn.original
 
     # A key of `None` tells us not to use the cache.
     if key is None:
-        return fn(*args, **kwargs)
+        return original_fn(*args, **kwargs)
 
     if timeout == -1:
         timeout = settings.THROTTLEANDCACHE_MAX_TIMEOUT
@@ -99,7 +100,7 @@ def get_result(key, fn, args, kwargs, timeout, cache_name, graceful,
     # The cached value is expired or the result was never cached. We
     # need to generate a new value.
     try:
-        result = fn(*args, **kwargs)
+        result = original_fn(*args, **kwargs)
     except Exception as exc:
         if graceful and cached:
             # There was an error executing the function, but we have
@@ -141,7 +142,7 @@ def cache(timeout=-1, using=None, key_prefix='', graceful=False,
         @wraps(fn)
         def wrapper(*args, **kwargs):
             key = get_key(key_prefix, key_func, fn, args, kwargs)
-            return get_result(key=key, fn=fn, args=args, kwargs=kwargs,
+            return get_result(key=key, fn=wrapper, args=args, kwargs=kwargs,
                               timeout=timeout, cache_name=using,
                               graceful=graceful, background=background)
 
@@ -167,6 +168,7 @@ def cache(timeout=-1, using=None, key_prefix='', graceful=False,
                 cache_backend.delete(key)
 
         wrapper.invalidate = invalidate
+        wrapper.original = fn
 
         return wrapper
     return decorator
