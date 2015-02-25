@@ -28,9 +28,6 @@ class ThrottleAndCacheConf(AppConf):
         if value is not None:
             return value
 
-        if settings.DEBUG:
-            return get_dummy_cache()
-
         default_cache_alias = get_default_cache_alias()
         if default_cache_alias in getattr(settings, 'CACHES', {}):
             return default_cache_alias
