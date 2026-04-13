@@ -46,7 +46,7 @@ setup(
         'django-appconf>=0.5',
     ],
     tests_require=[
-        'pytest==2.3.5',
+        'pytest==9.0.3',
         'mock==1.0.1',
         'Django',
         'celery',
